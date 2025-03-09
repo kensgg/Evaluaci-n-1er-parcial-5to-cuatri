@@ -112,3 +112,16 @@ export const actualizarPorId = async ({ id, username, password }) => {
     }
 };
 
+
+export const isAdmin = async (id) => {
+    try {
+        const usuario = await User.findById(id);
+        console.log(usuario);
+        if(usuario.tipoUsuario !== "admin"){
+            return false;
+        }
+        return true;
+    } catch (error) {
+        return mensaje(400, "Error al obtener el tipo de usuario", error); 
+    }
+};

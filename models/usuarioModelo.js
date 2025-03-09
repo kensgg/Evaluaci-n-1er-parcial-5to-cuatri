@@ -16,6 +16,10 @@ const userSchema = new mongoose.Schema({
         type:String,
         required:true,
     },
+    tipoUsuario:{
+        type:String,
+        default:"usuario"
+    },
     salt:{
         type:String,
         required:true,

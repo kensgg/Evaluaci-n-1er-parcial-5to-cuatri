@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { login, register, obtenerUsuarios, usuarioPorId, borrarPorId, actualizarPorId } from "../db/usuariosDB.js";
+import { adminAutorizado, usuarioAutorizado } from "../middlewares/funcionesPassword.js";
 const router = Router();
 
 router.post("/registro", async(req, res)=>{
@@ -40,16 +41,19 @@ router.put("/actualizarPorId/:id", async (req, res) => {
 
 
 router.get("/salir", async(req, res)=>{
-    res.json("Adios, Estás en salir");
+    res.cookie("token","",{expires : new Date(0)}).status(200).json("Sesion cerrada correctamente");
 });
 
 router.get("/usuariosLogueados", async(req, res)=>{
-    res.json("Usuarios convencionales y administradores logueados");
+    const respuesta = usuarioAutorizado(req.cookies.token,req);
+    res.status(respuesta.status).json(respuesta.mensajeUsuario);
 });
 
-router.get("/administradores", async(req, res)=>{
-    res.json("Solo administradores logueados");
+router.get("/administradores", async(req, res) => {
+    const respuesta = await adminAutorizado(req); 
+    res.status(respuesta.status).json(respuesta.mensajeUsuario);
 });
+
 
 router.get("/cualquierUsuario", async(req, res)=>{
     res.json("Todos pueden entrar sin loguearse");
