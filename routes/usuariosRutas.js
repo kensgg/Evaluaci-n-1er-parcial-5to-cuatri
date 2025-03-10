@@ -9,10 +9,16 @@ router.post("/registro", async(req, res)=>{
     res.cookie("token", respuesta.token).status(respuesta.status).json(respuesta.mensajeUsuario);
 });
 
-router.post("/login", async(req, res)=>{
-    const respuesta =  await login(req.body);
+router.post("/login", async (req, res) => {
+    const respuesta = await login(req.body);
     console.log(respuesta.mensajeOriginal);
-    res.cookie("token", respuesta.token).status(respuesta.status).json(respuesta.mensajeUsuario);
+
+    // Enviamos la respuesta al frontend
+    res.cookie("token", respuesta.token).status(respuesta.status).json({
+        estado: respuesta.status === 200, // Indica si el login fue exitoso
+        tipoUsuario: respuesta.mensajeOriginal.tipoUsuario, // Incluimos el tipoUsuario
+        mensaje: respuesta.mensajeUsuario, // Mensaje de bienvenida
+    });
 });
 
 router.get("/usuarios", async (req, res) => {
@@ -34,8 +40,8 @@ router.delete("/eliminarPorId/:id", async (req, res) => {
 
 router.put("/actualizarPorId/:id", async (req, res) => {  
     const { id } = req.params; 
-    const { username, email, password } = req.body; 
-    const respuesta = await actualizarPorId({ id, username, email, password });
+    const { username, email, password, tipoUsuario } = req.body; 
+    const respuesta = await actualizarPorId({ id, username, email, password, tipoUsuario });
     res.status(respuesta.status).json(respuesta.mensajeUsuario); 
 });
 
@@ -44,8 +50,11 @@ router.get("/salir", async(req, res)=>{
     res.cookie("token","",{expires : new Date(0)}).status(200).json("Sesion cerrada correctamente");
 });
 
-router.get("/usuariosLogueados", async(req, res)=>{
-    const respuesta = usuarioAutorizado(req.cookies.token,req);
+router.get("/usuariosLogueados", async (req, res) => {
+    const respuesta = usuarioAutorizado(req.cookies.token, req);
+    if (!respuesta.estado) {
+        return res.status(respuesta.status).json(respuesta.mensajeUsuario);
+    }
     res.status(respuesta.status).json(respuesta.mensajeUsuario);
 });
 

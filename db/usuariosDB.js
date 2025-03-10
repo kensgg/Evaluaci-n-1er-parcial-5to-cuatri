@@ -13,7 +13,7 @@ export const register = async ({username, email, password})=>{
         const{salt, hash} = encriptarPassword(password);
         const dataUser = new User({username, email, password:hash, salt});
         const respuestaMongo = await dataUser.save();
-        const token = await crearToken({id:respuestaMongo._id});
+        const token = await crearToken({id:respuestaMongo._id, username:respuestaMongo.username, tipoUsuario:respuestaMongo.tipoUsuario, email:respuestaMongo.email});
         //console.log("Usuario guardado correctamente");
         return mensaje(200,"Usuario Registrado","",token);
     } catch (error) {
@@ -23,18 +23,32 @@ export const register = async ({username, email, password})=>{
 
 export const login = async ({ username, password }) => {
     try {
-        const usuarioEncontrado = await User.findOne({ username }); // Añadir await aquí
+        const usuarioEncontrado = await User.findOne({ username });
         if (!usuarioEncontrado) {
             return mensaje(400, "Datos incorrectos");
         }
-        const passwordValido = validarPassword(password, usuarioEncontrado.salt, usuarioEncontrado.password); 
+
+        const passwordValido = validarPassword(password, usuarioEncontrado.salt, usuarioEncontrado.password);
         if (!passwordValido) {
             return mensaje(400, "Datos incorrectos");
         }
-        const token = await crearToken({ id: usuarioEncontrado._id });
-        return mensaje(200, `Bienvenido ${usuarioEncontrado.username}`, "", token);
+
+        const token = await crearToken({
+            id: usuarioEncontrado._id,
+            username: usuarioEncontrado.username,
+            tipoUsuario: usuarioEncontrado.tipoUsuario,
+            email: usuarioEncontrado.email,
+        });
+
+        // Devolvemos el tipoUsuario en la respuesta
+        return mensaje(
+            200,
+            `Bienvenido ${usuarioEncontrado.username}`,
+            { tipoUsuario: usuarioEncontrado.tipoUsuario }, // Aquí incluimos el tipoUsuario
+            token
+        );
     } catch (error) {
-        return mensaje(400, "Datos incorrectos", error);
+        return mensaje(400, "Datos incorrectos", error.message);
     }
 };
 
@@ -44,7 +58,7 @@ export const obtenerUsuarios = async () => {
         if (usuarios.length === 0) {
             return mensaje(404, "No hay usuarios registrados");
         }
-        return mensaje(200, "Usuarios encontrados", "", usuarios);  
+        return mensaje(200, "Usuarios encontrados", "", usuarios); // Cambia "token" a "usuarios"
     } catch (error) {
         return mensaje(400, "Error al obtener los usuarios", error);
     }
@@ -56,7 +70,7 @@ export const usuarioPorId =  async (id) => {
         if(!usuario){
             return mensaje(404, "No hay un usuario con ese id");
         }
-        return mensaje(200, "Usuario encontrado", "", usuario);
+        return mensaje(200, "Usuario encontrado", "", usuario); 
     } catch (error) {
         return mensaje(400, "Error al obtener usuario", error);
     }
@@ -79,7 +93,7 @@ export const borrarPorId = async (id) => {
     
 }
 
-export const actualizarPorId = async ({ id, username, password }) => {
+export const actualizarPorId = async ({ id, username, password, tipoUsuario }) => {
     try {
         const usuario = await User.findById(id);
         if (!usuario) {
@@ -101,6 +115,10 @@ export const actualizarPorId = async ({ id, username, password }) => {
             usuario.username = username;
         }
 
+        if (tipoUsuario) {
+            usuario.tipoUsuario = tipoUsuario;
+        }
+
         const usuarioActualizado = await usuario.save();
         if (!usuarioActualizado) {
             return mensaje(404, "No se ha podido actualizar al usuario");
@@ -116,12 +134,11 @@ export const actualizarPorId = async ({ id, username, password }) => {
 export const isAdmin = async (id) => {
     try {
         const usuario = await User.findById(id);
-        console.log(usuario);
-        if(usuario.tipoUsuario !== "admin"){
+        if (!usuario || usuario.tipoUsuario !== "admin") {
             return false;
         }
         return true;
     } catch (error) {
-        return mensaje(400, "Error al obtener el tipo de usuario", error); 
+        return false; 
     }
 };
