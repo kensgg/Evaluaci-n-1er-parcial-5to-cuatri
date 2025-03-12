@@ -50,13 +50,31 @@ router.get("/salir", async(req, res)=>{
     res.cookie("token","",{expires : new Date(0)}).status(200).json("Sesion cerrada correctamente");
 });
 
-router.get("/usuariosLogueados", async (req, res) => {
-    const respuesta = usuarioAutorizado(req.cookies.token, req);
-    if (!respuesta.estado) {
-        return res.status(respuesta.status).json(respuesta.mensajeUsuario);
+router.get("/usuariosLogueados", (req, res) => {
+    const token = req.cookies.token;  // Extraemos el token desde la cookie
+
+    console.log("Token recibido desde la cookie:", token);  // Verifica que estás recibiendo el token
+
+    if (!token) {
+        return res.status(400).json({ mensaje: "Token no proporcionado" });
     }
-    res.status(respuesta.status).json(respuesta.mensajeUsuario);
+
+    // Llamamos a la función usuarioAutorizado para verificar el token
+    const respuesta = usuarioAutorizado(token, req);
+    
+    if (respuesta.status === 200) {
+        // Si la validación fue exitosa, accedemos al usuario autorizado desde `req.usuario`
+        console.log("Usuario autorizado:", req.usuario);  // Verifica que el usuario está siendo correctamente decodificado
+        return res.json({
+            mensaje: "Usuario logueado correctamente",
+            usuario: req.usuario,  // Aquí devolvemos los datos del usuario
+        });
+    } else {
+        // Si no está autorizado, devolvemos el mensaje de error
+        return res.status(400).json({ mensaje: "Usuario no autorizado" });
+    }
 });
+
 
 router.get("/administradores", async(req, res) => {
     const respuesta = await adminAutorizado(req); 

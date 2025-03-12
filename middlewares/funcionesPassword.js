@@ -17,13 +17,15 @@ export function validarPassword(password, salt, hash) {
 
 
 export function usuarioAutorizado(token, req) {
+    console.log(token)
     if (!token) {
         return mensaje(400, "Usuario no autorizado");
     }
+
     try {
         const usuario = jwt.verify(token, process.env.SECRET_TOKEN);
         req.usuario = usuario;
-        return mensaje(200, "Usuario autorizado");
+        return mensaje(200, "Usuario autorizado", usuario);
     } catch (error) {
         return mensaje(400, "Usuario no autorizado");
     }
